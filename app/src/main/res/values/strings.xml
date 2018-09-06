@@ -99,7 +99,6 @@
     <string name="tunnel_rename_success">Successfully renamed tunnel to “%s”</string>
     <string name="tunnel_error_invalid_name">Invalid name</string>
     <string name="tunnel_error_already_exists">Tunnel %s already exists</string>
-    <string name="tunnel_error_empty_inetaddress">Empty address</string>
     <string name="tunnel_error_empty_interface_address">Address is empty</string>
     <string name="tunnel_error_interface_parse_failed">Unable to parse line: “%s”</string>
     <string name="tunnel_error_forbidden_endpoint_chars">Forbidden characters in endpoint</string>
