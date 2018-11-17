@@ -6,7 +6,6 @@
 package com.wireguard.config;
 
 import android.support.annotation.Nullable;
-import android.text.TextUtils;
 
 import com.wireguard.crypto.Key;
 import com.wireguard.crypto.KeyPair;
@@ -18,7 +17,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.regex.Matcher;
 
 import java9.util.Lists;
 import java9.util.Optional;
@@ -65,29 +63,26 @@ public final class Interface {
     public static Interface parse(final Iterable<? extends CharSequence> lines) throws ParseException {
         final Builder builder = new Builder();
         for (final CharSequence line : lines) {
-            final Matcher matcher = Config.LINE_PATTERN.matcher(line);
-            if (!matcher.matches())
-                throw new ParseException(line, "Bad configuration format in [Interface]");
-            final String key = matcher.group(1);
-            final String value = matcher.group(2);
-            switch (key.toLowerCase()) {
+            final Attribute attribute = Attribute.parse(line)
+                    .orElseThrow(() -> new ParseException(line, "Bad configuration format in [Interface]"));
+            switch (attribute.getKey().toLowerCase()) {
                 case "address":
-                    builder.parseAddresses(value);
+                    builder.parseAddresses(attribute.getValue());
                     break;
                 case "dns":
-                    builder.parseDnsServers(value);
+                    builder.parseDnsServers(attribute.getValue());
                     break;
                 case "excludedapplications":
-                    builder.parseExcludedApplications(value);
+                    builder.parseExcludedApplications(attribute.getValue());
                     break;
                 case "listenport":
-                    builder.parseListenPort(value);
+                    builder.parseListenPort(attribute.getValue());
                     break;
                 case "mtu":
-                    builder.parseMtu(value);
+                    builder.parseMtu(attribute.getValue());
                     break;
                 case "privatekey":
-                    builder.parsePrivateKey(value);
+                    builder.parsePrivateKey(attribute.getValue());
                     break;
                 default:
                     throw new ParseException(line, "Unknown [Interface] attribute");
@@ -202,15 +197,15 @@ public final class Interface {
     public String toWgQuickString() {
         final StringBuilder sb = new StringBuilder();
         if (!addresses.isEmpty())
-            sb.append("Address = ").append(TextUtils.join(", ", addresses)).append('\n');
+            sb.append("Address = ").append(Attribute.join(addresses)).append('\n');
         if (!dnsServers.isEmpty()) {
             final List<String> dnsServerStrings = StreamSupport.stream(dnsServers)
                     .map(InetAddress::getHostAddress)
                     .collect(Collectors.toUnmodifiableList());
-            sb.append("DNS = ").append(TextUtils.join(", ", dnsServerStrings)).append('\n');
+            sb.append("DNS = ").append(Attribute.join(dnsServerStrings)).append('\n');
         }
         if (!excludedApplications.isEmpty())
-            sb.append("ExcludedApplications = ").append(TextUtils.join(", ", excludedApplications)).append('\n');
+            sb.append("ExcludedApplications = ").append(Attribute.join(excludedApplications)).append('\n');
         listenPort.ifPresent(lp -> sb.append("ListenPort = ").append(lp).append('\n'));
         mtu.ifPresent(m -> sb.append("MTU = ").append(m).append('\n'));
         sb.append("PrivateKey = ").append(keyPair.getPrivateKey().toBase64()).append('\n');
@@ -281,7 +276,7 @@ public final class Interface {
 
         public Builder parseAddresses(final CharSequence addresses) throws ParseException {
             try {
-                final List<InetNetwork> parsed = Stream.of(Config.LIST_SEPARATOR.split(addresses))
+                final List<InetNetwork> parsed = Stream.of(Attribute.split(addresses))
                         .map(InetNetwork::parse)
                         .collect(Collectors.toUnmodifiableList());
                 return addAddresses(parsed);
@@ -292,7 +287,7 @@ public final class Interface {
 
         public Builder parseDnsServers(final CharSequence dnsServers) throws ParseException {
             try {
-                final List<InetAddress> parsed = Stream.of(Config.LIST_SEPARATOR.split(dnsServers))
+                final List<InetAddress> parsed = Stream.of(Attribute.split(dnsServers))
                         .map(InetAddresses::parse)
                         .collect(Collectors.toUnmodifiableList());
                 return addDnsServers(parsed);
@@ -303,7 +298,7 @@ public final class Interface {
 
         public Builder parseExcludedApplications(final CharSequence apps) throws ParseException {
             try {
-                return excludeApplications(Lists.of(Config.LIST_SEPARATOR.split(apps)));
+                return excludeApplications(Lists.of(Attribute.split(apps)));
             } catch (final IllegalArgumentException e) {
                 throw new ParseException(apps, e);
             }

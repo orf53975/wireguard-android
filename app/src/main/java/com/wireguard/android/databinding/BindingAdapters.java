@@ -14,7 +14,6 @@ import android.support.annotation.Nullable;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.InputFilter;
-import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -25,6 +24,7 @@ import com.wireguard.android.databinding.ObservableKeyedRecyclerViewAdapter.RowC
 import com.wireguard.android.util.ObservableKeyedList;
 import com.wireguard.android.widget.ToggleSwitch;
 import com.wireguard.android.widget.ToggleSwitch.OnBeforeCheckedChangeListener;
+import com.wireguard.config.Attribute;
 import com.wireguard.config.InetNetwork;
 import com.wireguard.util.Keyed;
 
@@ -143,6 +143,6 @@ public final class BindingAdapters {
 
     @BindingAdapter("android:text")
     public static void setText(final TextView view, @Nullable final Iterable<InetNetwork> networks) {
-        view.setText(networks != null ? TextUtils.join(", ", networks) : "");
+        view.setText(networks != null ? Attribute.join(networks) : "");
     }
 }

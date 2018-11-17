@@ -11,10 +11,9 @@ import android.databinding.ObservableList;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.support.annotation.Nullable;
-import android.text.TextUtils;
 
 import com.wireguard.android.BR;
-import com.wireguard.config.Config;
+import com.wireguard.config.Attribute;
 import com.wireguard.config.InetEndpoint;
 import com.wireguard.config.ParseException;
 import com.wireguard.config.Peer;
@@ -59,7 +58,7 @@ public class PeerProxy extends BaseObservable implements Parcelable {
     }
 
     public PeerProxy(final Peer other) {
-        allowedIps = TextUtils.join(", ", other.getAllowedIps());
+        allowedIps = Attribute.join(other.getAllowedIps());
         endpoint = other.getEndpoint().map(InetEndpoint::toString).orElse("");
         persistentKeepalive = other.getPersistentKeepalive().map(String::valueOf).orElse("");
         preSharedKey = other.getPreSharedKey().map(Key::toBase64).orElse("");
@@ -119,7 +118,7 @@ public class PeerProxy extends BaseObservable implements Parcelable {
     }
 
     private Set<String> getAllowedIpsSet() {
-        return new LinkedHashSet<>(Lists.of(Config.LIST_SEPARATOR.split(allowedIps)));
+        return new LinkedHashSet<>(Lists.of(Attribute.split(allowedIps)));
     }
 
     @Bindable
@@ -201,7 +200,7 @@ public class PeerProxy extends BaseObservable implements Parcelable {
                 output.add(network);
             }
         }
-        allowedIps = TextUtils.join(", ", output);
+        allowedIps = Attribute.join(output);
         allowedIpsState = excludingPrivateIps ?
                 AllowedIpsState.CONTAINS_IPV4_PUBLIC_NETWORKS : AllowedIpsState.CONTAINS_IPV4_WILDCARD;
         notifyPropertyChanged(BR.allowedIps);

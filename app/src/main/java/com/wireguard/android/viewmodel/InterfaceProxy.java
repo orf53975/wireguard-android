@@ -11,9 +11,9 @@ import android.databinding.ObservableArrayList;
 import android.databinding.ObservableList;
 import android.os.Parcel;
 import android.os.Parcelable;
-import android.text.TextUtils;
 
 import com.wireguard.android.BR;
+import com.wireguard.config.Attribute;
 import com.wireguard.config.Interface;
 import com.wireguard.config.ParseException;
 import com.wireguard.crypto.Key;
@@ -47,11 +47,11 @@ public class InterfaceProxy extends BaseObservable implements Parcelable {
     }
 
     public InterfaceProxy(final Interface other) {
-        addresses = TextUtils.join(", ", other.getAddresses());
+        addresses = Attribute.join(other.getAddresses());
         final List<String> dnsServerStrings = StreamSupport.stream(other.getDnsServers())
                 .map(InetAddress::getHostAddress)
                 .collect(Collectors.toUnmodifiableList());
-        dnsServers = TextUtils.join(", ", dnsServerStrings);
+        dnsServers = Attribute.join(dnsServerStrings);
         excludedApplications.addAll(other.getExcludedApplications());
         listenPort = other.getListenPort().map(String::valueOf).orElse("");
         mtu = other.getMtu().map(String::valueOf).orElse("");

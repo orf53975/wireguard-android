@@ -18,7 +18,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.regex.Pattern;
 
 /**
  * Represents the contents of a wg-quick configuration file, made up of one or more "Interface"
@@ -27,9 +26,6 @@ import java.util.regex.Pattern;
  * Instances of this class are immutable.
  */
 public final class Config {
-    public static final Pattern LINE_PATTERN = Pattern.compile("(\\w+)\\s*=\\s*([^\\s#][^#]*)");
-    public static final Pattern LIST_SEPARATOR = Pattern.compile("\\s*,\\s*");
-
     private final Interface interfaze;
     private final List<Peer> peers;
 

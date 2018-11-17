@@ -6,7 +6,6 @@
 package com.wireguard.config;
 
 import android.support.annotation.Nullable;
-import android.text.TextUtils;
 
 import com.wireguard.crypto.Key;
 
@@ -16,7 +15,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.regex.Matcher;
 
 import java9.util.Optional;
 import java9.util.stream.Collectors;
@@ -54,26 +52,23 @@ public final class Peer {
     public static Peer parse(final Iterable<? extends CharSequence> lines) throws ParseException {
         final Builder builder = new Builder();
         for (final CharSequence line : lines) {
-            final Matcher matcher = Config.LINE_PATTERN.matcher(line);
-            if (!matcher.matches())
-                throw new ParseException(line, "Bad configuration format in [Peer]");
-            final String key = matcher.group(1);
-            final String value = matcher.group(2);
-            switch (key.toLowerCase()) {
+            final Attribute attribute = Attribute.parse(line)
+                    .orElseThrow(() -> new ParseException(line, "Bad configuration format in [Peer]"));
+            switch (attribute.getKey().toLowerCase()) {
                 case "allowedips":
-                    builder.parseAllowedIPs(value);
+                    builder.parseAllowedIPs(attribute.getValue());
                     break;
                 case "endpoint":
-                    builder.parseEndpoint(value);
+                    builder.parseEndpoint(attribute.getValue());
                     break;
                 case "persistentkeepalive":
-                    builder.parsePersistentKeepalive(value);
+                    builder.parsePersistentKeepalive(attribute.getValue());
                     break;
                 case "presharedkey":
-                    builder.parsePreSharedKey(value);
+                    builder.parsePreSharedKey(attribute.getValue());
                     break;
                 case "publickey":
-                    builder.parsePublicKey(value);
+                    builder.parsePublicKey(attribute.getValue());
                     break;
                 default:
                     throw new ParseException(line, "Unknown [Peer] attribute");
@@ -175,7 +170,7 @@ public final class Peer {
     public String toWgQuickString() {
         final StringBuilder sb = new StringBuilder();
         if (!allowedIps.isEmpty())
-            sb.append("AllowedIPs = ").append(TextUtils.join(", ", allowedIps)).append('\n');
+            sb.append("AllowedIPs = ").append(Attribute.join(allowedIps)).append('\n');
         endpoint.ifPresent(ep -> sb.append("Endpoint = ").append(ep).append('\n'));
         persistentKeepalive.ifPresent(pk -> sb.append("PersistentKeepalive = ").append(pk).append('\n'));
         preSharedKey.ifPresent(psk -> sb.append("PreSharedKey = ").append(psk.toBase64()).append('\n'));
@@ -233,7 +228,7 @@ public final class Peer {
 
         public Builder parseAllowedIPs(final CharSequence allowedIps) throws ParseException {
             try {
-                final List<InetNetwork> parsed = Stream.of(Config.LIST_SEPARATOR.split(allowedIps))
+                final List<InetNetwork> parsed = Stream.of(Attribute.split(allowedIps))
                         .map(InetNetwork::parse)
                         .collect(Collectors.toUnmodifiableList());
                 return addAllowedIps(parsed);
