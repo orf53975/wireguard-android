@@ -36,8 +36,7 @@ public class AppListDialogFragment extends DialogFragment {
 
     private static final String KEY_EXCLUDED_APPS = "excludedApps";
     private final ObservableKeyedList<String, ApplicationData> appData = new ObservableKeyedArrayList<>();
-    @Nullable
-    private List<String> currentlyExcludedApps;
+    @Nullable private List<String> currentlyExcludedApps;
 
     public static <T extends Fragment & AppExclusionListener>
     AppListDialogFragment newInstance(final ArrayList<String> excludedApps, final T target) {

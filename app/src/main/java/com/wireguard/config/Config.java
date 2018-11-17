@@ -169,8 +169,7 @@ public final class Config {
         // Defaults to an empty set.
         private final Set<Peer> peers = new LinkedHashSet<>();
         // No default; must be provided before building.
-        @Nullable
-        private Interface interfaze;
+        @Nullable private Interface interfaze;
 
         public Builder addPeer(final Peer peer) {
             peers.add(peer);

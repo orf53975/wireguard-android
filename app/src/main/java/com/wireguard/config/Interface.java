@@ -239,8 +239,7 @@ public final class Interface {
         // Defaults to an empty set.
         private final Set<String> excludedApplications = new LinkedHashSet<>();
         // No default; must be provided before building.
-        @Nullable
-        private KeyPair keyPair;
+        @Nullable private KeyPair keyPair;
         // Defaults to not present.
         private Optional<Integer> listenPort = Optional.empty();
         // Defaults to not present.

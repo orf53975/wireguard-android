@@ -43,10 +43,8 @@ public class PeerProxy extends BaseObservable implements Parcelable {
     private String allowedIps;
     private AllowedIpsState allowedIpsState = AllowedIpsState.INVALID;
     private String endpoint;
-    @Nullable
-    private Listener listener;
-    @Nullable
-    private ConfigProxy owner;
+    @Nullable private Listener listener;
+    @Nullable private ConfigProxy owner;
     private String persistentKeepalive;
     private String preSharedKey;
     private String publicKey;

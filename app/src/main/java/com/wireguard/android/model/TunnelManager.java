@@ -112,7 +112,8 @@ public final class TunnelManager extends BaseObservable {
         });
     }
 
-    @Bindable @Nullable
+    @Bindable
+    @Nullable
     public Tunnel getLastUsedTunnel() {
         return lastUsedTunnel;
     }

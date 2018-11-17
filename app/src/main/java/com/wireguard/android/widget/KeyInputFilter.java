@@ -25,7 +25,8 @@ public class KeyInputFilter implements InputFilter {
         return new KeyInputFilter();
     }
 
-    @Override @Nullable
+    @Nullable
+    @Override
     public CharSequence filter(final CharSequence source,
                                final int sStart, final int sEnd,
                                final Spanned dest,

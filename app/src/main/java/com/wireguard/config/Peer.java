@@ -215,8 +215,7 @@ public final class Peer {
         // Defaults to not present.
         private Optional<Key> preSharedKey = Optional.empty();
         // No default; must be provided before building.
-        @Nullable
-        private Key publicKey;
+        @Nullable private Key publicKey;
 
         public Builder addAllowedIp(final InetNetwork allowedIp) {
             allowedIps.add(allowedIp);
