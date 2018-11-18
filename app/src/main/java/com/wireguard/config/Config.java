@@ -118,7 +118,7 @@ public final class Config {
 
     @Override
     public int hashCode() {
-        return interfaze.hashCode() ^ peers.hashCode();
+        return 31 * interfaze.hashCode() + peers.hashCode();
     }
 
     /**
