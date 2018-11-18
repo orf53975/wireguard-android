@@ -42,13 +42,15 @@ public enum ExceptionLoggers implements BiConsumer<Object, Throwable> {
 
     public static String unwrapMessage(final Throwable throwable) {
         final Throwable innerThrowable = unwrap(throwable);
-        final String message;
+        final Resources resources = Application.get().getResources();
+        String message;
         if (innerThrowable instanceof ParseException) {
             final ParseException parseException = (ParseException) innerThrowable;
-            message = "Parse error at \"" + parseException.getContext() + '"';
+            message = resources.getString(R.string.parse_error, parseException.getText(), parseException.getContext());
+            if (parseException.getMessage() != null)
+                message += ": " + parseException.getMessage();
         } else if (innerThrowable instanceof Key.KeyFormatException) {
             final Key.KeyFormatException keyFormatException = (Key.KeyFormatException) innerThrowable;
-            final Resources resources = Application.get().getResources();
             switch (keyFormatException.getFormat()) {
                 case BASE64:
                     message = resources.getString(R.string.key_length_base64_exception_message);

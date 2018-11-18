@@ -53,7 +53,7 @@ public final class Peer {
         final Builder builder = new Builder();
         for (final CharSequence line : lines) {
             final Attribute attribute = Attribute.parse(line)
-                    .orElseThrow(() -> new ParseException(line, "Bad configuration format in [Peer]"));
+                    .orElseThrow(() -> new ParseException("[Peer]", line, "Syntax error"));
             switch (attribute.getKey().toLowerCase()) {
                 case "allowedips":
                     builder.parseAllowedIPs(attribute.getValue());
@@ -71,7 +71,7 @@ public final class Peer {
                     builder.parsePublicKey(attribute.getValue());
                     break;
                 default:
-                    throw new ParseException(line, "Unknown [Peer] attribute");
+                    throw new ParseException("[Peer]", line, "Unknown attribute");
             }
         }
         return builder.build();
@@ -233,7 +233,7 @@ public final class Peer {
                         .collect(Collectors.toUnmodifiableList());
                 return addAllowedIps(parsed);
             } catch (final IllegalArgumentException e) {
-                throw new ParseException(allowedIps, e);
+                throw new ParseException("AllowedIPs", allowedIps, e);
             }
         }
 
@@ -241,7 +241,7 @@ public final class Peer {
             try {
                 return setEndpoint(InetEndpoint.parse(endpoint));
             } catch (final IllegalArgumentException e) {
-                throw new ParseException(endpoint, e);
+                throw new ParseException("Endpoint", endpoint, e);
             }
         }
 
@@ -249,7 +249,7 @@ public final class Peer {
             try {
                 return setPersistentKeepalive(Integer.parseInt(persistentKeepalive));
             } catch (final IllegalArgumentException e) {
-                throw new ParseException(persistentKeepalive, e);
+                throw new ParseException("PersistentKeepalive", persistentKeepalive, e);
             }
         }
 
@@ -257,7 +257,7 @@ public final class Peer {
             try {
                 return setPreSharedKey(Key.fromBase64(preSharedKey));
             } catch (final Key.KeyFormatException e) {
-                throw new ParseException(preSharedKey, e);
+                throw new ParseException("PresharedKey", preSharedKey, e);
             }
         }
 
@@ -265,7 +265,7 @@ public final class Peer {
             try {
                 return setPublicKey(Key.fromBase64(publicKey));
             } catch (final Key.KeyFormatException e) {
-                throw new ParseException(publicKey, e);
+                throw new ParseException("PublicKey", publicKey, e);
             }
         }
 

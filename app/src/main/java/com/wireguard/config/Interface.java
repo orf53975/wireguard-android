@@ -63,7 +63,7 @@ public final class Interface {
         final Builder builder = new Builder();
         for (final CharSequence line : lines) {
             final Attribute attribute = Attribute.parse(line)
-                    .orElseThrow(() -> new ParseException(line, "Bad configuration format in [Interface]"));
+                    .orElseThrow(() -> new ParseException("[Interface]", line, "Syntax error"));
             switch (attribute.getKey().toLowerCase()) {
                 case "address":
                     builder.parseAddresses(attribute.getValue());
@@ -84,7 +84,7 @@ public final class Interface {
                     builder.parsePrivateKey(attribute.getValue());
                     break;
                 default:
-                    throw new ParseException(line, "Unknown [Interface] attribute");
+                    throw new ParseException("[Interface]", attribute.getKey(), "Unknown attribute");
             }
         }
         return builder.build();
@@ -280,7 +280,7 @@ public final class Interface {
                         .collect(Collectors.toUnmodifiableList());
                 return addAddresses(parsed);
             } catch (final IllegalArgumentException e) {
-                throw new ParseException(addresses, e);
+                throw new ParseException("Address", addresses, e);
             }
         }
 
@@ -291,7 +291,7 @@ public final class Interface {
                         .collect(Collectors.toUnmodifiableList());
                 return addDnsServers(parsed);
             } catch (final IllegalArgumentException e) {
-                throw new ParseException(dnsServers, e);
+                throw new ParseException("DNS", dnsServers, e);
             }
         }
 
@@ -299,7 +299,7 @@ public final class Interface {
             try {
                 return excludeApplications(Lists.of(Attribute.split(apps)));
             } catch (final IllegalArgumentException e) {
-                throw new ParseException(apps, e);
+                throw new ParseException("ExcludedApplications", apps, e);
             }
         }
 
@@ -307,7 +307,7 @@ public final class Interface {
             try {
                 return setListenPort(Integer.parseInt(listenPort));
             } catch (final IllegalArgumentException e) {
-                throw new ParseException(listenPort, e);
+                throw new ParseException("ListenPort", listenPort, e);
             }
         }
 
@@ -315,7 +315,7 @@ public final class Interface {
             try {
                 return setMtu(Integer.parseInt(mtu));
             } catch (final IllegalArgumentException e) {
-                throw new ParseException(mtu, e);
+                throw new ParseException("MTU", mtu, e);
             }
         }
 
@@ -323,7 +323,7 @@ public final class Interface {
             try {
                 return setKeyPair(new KeyPair(Key.fromBase64(privateKey)));
             } catch (final Key.KeyFormatException e) {
-                throw new ParseException("(private key)", e);
+                throw new ParseException("PrivateKey", "(omitted)", e);
             }
         }
 

@@ -70,20 +70,20 @@ public final class Config {
                         inInterfaceSection = false;
                         inPeerSection = true;
                     } else {
-                        throw new ParseException(line, "Unknown configuration section name");
+                        throw new ParseException("top level", line, "Unknown section name");
                     }
                 } else if (inInterfaceSection) {
                     interfaceLines.add(line);
                 } else if (inPeerSection) {
                     peerLines.add(line);
                 } else {
-                    throw new ParseException(line, "Expected [Interface] or [Peer]");
+                    throw new ParseException("top level", line, "Expected [Interface] or [Peer]");
                 }
             }
             if (inPeerSection)
                 builder.parsePeer(peerLines);
             else if (!inInterfaceSection)
-                throw new ParseException("", "Empty configuration");
+                throw new ParseException("top level", "", "Empty configuration");
             // Combine all [Interface] sections in the file.
             builder.parseInterface(interfaceLines);
         }
