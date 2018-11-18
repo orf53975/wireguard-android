@@ -11,7 +11,6 @@ import org.threeten.bp.Duration;
 import org.threeten.bp.Instant;
 
 import java.net.Inet4Address;
-import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -31,7 +30,6 @@ public final class InetEndpoint {
     private static final Pattern FORBIDDEN_CHARACTERS = Pattern.compile("[/?#]");
 
     private final String host;
-    private final boolean isBareIpv6;
     private final boolean isResolved;
     private final Object lock = new Object();
     private final int port;
@@ -40,7 +38,6 @@ public final class InetEndpoint {
 
     private InetEndpoint(final String host, final boolean isResolved, final int port) {
         this.host = host;
-        isBareIpv6 = isResolved && BARE_IPV6.matcher(host).matches();
         this.isResolved = isResolved;
         this.port = port;
     }
@@ -92,13 +89,13 @@ public final class InetEndpoint {
             return Optional.of(this);
         synchronized (lock) {
             //TODO(zx2c4): Implement a real timeout mechanism using DNS TTL
-            if (Duration.between(lastResolution, Instant.now()).toMinutes() > 10) {
+            if (Duration.between(lastResolution, Instant.now()).toMinutes() > 1) {
                 try {
                     // Prefer v4 endpoints over v6 to work around DNS64 and IPv6 NAT issues.
                     final InetAddress[] candidates = InetAddress.getAllByName(host);
                     InetAddress address = candidates[0];
                     for (final InetAddress candidate : candidates) {
-                        if (address instanceof Inet6Address && candidate instanceof Inet4Address) {
+                        if (candidate instanceof Inet4Address) {
                             address = candidate;
                             break;
                         }
@@ -120,6 +117,7 @@ public final class InetEndpoint {
 
     @Override
     public String toString() {
+        final boolean isBareIpv6 = isResolved && BARE_IPV6.matcher(host).matches();
         return (isBareIpv6 ? '[' + host + ']' : host) + ':' + port;
     }
 }
