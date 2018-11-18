@@ -7,6 +7,7 @@ package com.wireguard.android.viewmodel;
 
 import android.databinding.BaseObservable;
 import android.databinding.Bindable;
+import android.databinding.Observable;
 import android.databinding.ObservableList;
 import android.os.Parcel;
 import android.os.Parcelable;
@@ -20,12 +21,16 @@ import com.wireguard.config.Peer;
 import com.wireguard.crypto.Key;
 
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
 import java9.util.Lists;
 import java9.util.Sets;
+import java9.util.stream.Collectors;
+import java9.util.stream.Stream;
 
 public class PeerProxy extends BaseObservable implements Parcelable {
     public static final Parcelable.Creator<PeerProxy> CREATOR = new PeerProxyCreator();
@@ -39,11 +44,13 @@ public class PeerProxy extends BaseObservable implements Parcelable {
     ));
     private static final Set<String> IPV4_WILDCARD = Sets.of("0.0.0.0/0");
 
+    private final List<String> dnsRoutes = new ArrayList<>();
     private String allowedIps;
     private AllowedIpsState allowedIpsState = AllowedIpsState.INVALID;
     private String endpoint;
-    @Nullable private Listener listener;
+    @Nullable private InterfaceDnsListener interfaceDnsListener;
     @Nullable private ConfigProxy owner;
+    @Nullable private PeerListListener peerListListener;
     private String persistentKeepalive;
     private String preSharedKey;
     private String publicKey;
@@ -74,10 +81,15 @@ public class PeerProxy extends BaseObservable implements Parcelable {
     }
 
     public void bind(final ConfigProxy owner) {
+        final InterfaceProxy interfaze = owner.getInterface();
         final ObservableList<PeerProxy> peers = owner.getPeers();
-        if (listener == null)
-            listener = new Listener(this);
-        peers.addOnListChangedCallback(listener);
+        if (interfaceDnsListener == null)
+            interfaceDnsListener = new InterfaceDnsListener(this);
+        interfaze.addOnPropertyChangedCallback(interfaceDnsListener);
+        setInterfaceDns(interfaze.getDnsServers());
+        if (peerListListener == null)
+            peerListListener = new PeerListListener(this);
+        peers.addOnListChangedCallback(peerListListener);
         setTotalPeers(peers.size());
         this.owner = owner;
     }
@@ -184,8 +196,8 @@ public class PeerProxy extends BaseObservable implements Parcelable {
         final Set<String> oldNetworks = excludingPrivateIps ? IPV4_WILDCARD : IPV4_PUBLIC_NETWORKS;
         final Set<String> newNetworks = excludingPrivateIps ? IPV4_PUBLIC_NETWORKS : IPV4_WILDCARD;
         final Collection<String> input = getAllowedIpsSet();
-        final Collection<String> output =
-                new LinkedHashSet<>(input.size() - oldNetworks.size() + newNetworks.size());
+        final int outputSize = input.size() - oldNetworks.size() + newNetworks.size();
+        final Collection<String> output = new LinkedHashSet<>(outputSize);
         boolean replaced = false;
         // Replace the first instance of the wildcard with the public network list, or vice versa.
         for (final String network : input) {
@@ -200,12 +212,37 @@ public class PeerProxy extends BaseObservable implements Parcelable {
                 output.add(network);
             }
         }
+        // DNS servers only need to handled specially when we're excluding private IPs.
+        if (excludingPrivateIps)
+            output.addAll(dnsRoutes);
+        else
+            output.removeAll(dnsRoutes);
         allowedIps = Attribute.join(output);
         allowedIpsState = excludingPrivateIps ?
                 AllowedIpsState.CONTAINS_IPV4_PUBLIC_NETWORKS : AllowedIpsState.CONTAINS_IPV4_WILDCARD;
         notifyPropertyChanged(BR.allowedIps);
-        notifyPropertyChanged(BR.ableToExcludePrivateIps);
         notifyPropertyChanged(BR.excludingPrivateIps);
+    }
+
+    private void setInterfaceDns(final CharSequence dnsServers) {
+        final List<String> newDnsRoutes = Stream.of(Attribute.split(dnsServers))
+                .map(server -> server + "/32")
+                .collect(Collectors.toUnmodifiableList());
+        if (allowedIpsState == AllowedIpsState.CONTAINS_IPV4_PUBLIC_NETWORKS) {
+            final Collection<String> input = getAllowedIpsSet();
+            final Collection<String> output = new LinkedHashSet<>(input.size() + 1);
+            // Yes, this is quadratic in the number of DNS servers, but most users have 1 or 2.
+            for (final String network : input)
+                if (!dnsRoutes.contains(network) || newDnsRoutes.contains(network))
+                    output.add(network);
+            // Since output is a Set, this does the Right Thing™ (it does not duplicate networks).
+            output.addAll(newDnsRoutes);
+            // None of the public networks are /32s, so this cannot change the AllowedIPs state.
+            allowedIps = Attribute.join(output);
+            notifyPropertyChanged(BR.allowedIps);
+        }
+        dnsRoutes.clear();
+        dnsRoutes.addAll(newDnsRoutes);
     }
 
     public void setPersistentKeepalive(final String persistentKeepalive) {
@@ -233,10 +270,14 @@ public class PeerProxy extends BaseObservable implements Parcelable {
     public void unbind() {
         if (owner == null)
             return;
+        final InterfaceProxy interfaze = owner.getInterface();
         final ObservableList<PeerProxy> peers = owner.getPeers();
-        if (listener != null)
-            peers.removeOnListChangedCallback(listener);
+        if (interfaceDnsListener != null)
+            interfaze.removeOnPropertyChangedCallback(interfaceDnsListener);
+        if (peerListListener != null)
+            peers.removeOnListChangedCallback(peerListListener);
         peers.remove(this);
+        setInterfaceDns("");
         setTotalPeers(0);
         owner = null;
     }
@@ -257,21 +298,45 @@ public class PeerProxy extends BaseObservable implements Parcelable {
         OTHER
     }
 
-    private static final class Listener
+    private static final class InterfaceDnsListener extends Observable.OnPropertyChangedCallback {
+        private final WeakReference<PeerProxy> weakPeerProxy;
+
+        private InterfaceDnsListener(final PeerProxy peerProxy) {
+            weakPeerProxy = new WeakReference<>(peerProxy);
+        }
+
+        @Override
+        public void onPropertyChanged(final Observable sender, final int propertyId) {
+            @Nullable final PeerProxy peerProxy = weakPeerProxy.get();
+            if (peerProxy == null) {
+                sender.removeOnPropertyChangedCallback(this);
+                return;
+            }
+            // This shouldn't be possible, but try to avoid a ClassCastException anyway.
+            if (!(sender instanceof InterfaceProxy))
+                return;
+            if (!(propertyId == BR._all || propertyId == BR.dnsServers))
+                return;
+            peerProxy.setInterfaceDns(((InterfaceProxy) sender).getDnsServers());
+        }
+    }
+
+    private static final class PeerListListener
             extends ObservableList.OnListChangedCallback<ObservableList<PeerProxy>> {
         private final WeakReference<PeerProxy> weakPeerProxy;
 
-        private Listener(final PeerProxy peerProxy) {
+        private PeerListListener(final PeerProxy peerProxy) {
             weakPeerProxy = new WeakReference<>(peerProxy);
         }
 
         @Override
         public void onChanged(final ObservableList<PeerProxy> sender) {
             @Nullable final PeerProxy peerProxy = weakPeerProxy.get();
-            if (peerProxy != null)
-                peerProxy.setTotalPeers(sender.size());
-            else
+            if (peerProxy == null) {
                 sender.removeOnListChangedCallback(this);
+                return;
+            }
+            peerProxy.setTotalPeers(sender.size());
         }
 
         @Override
