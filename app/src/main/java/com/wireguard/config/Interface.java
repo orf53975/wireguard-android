@@ -33,8 +33,7 @@ import java9.util.stream.StreamSupport;
  */
 public final class Interface {
     private static final int MAX_UDP_PORT = 65535;
-    private static final int MIN_IPV6_MTU = 1280;
-    private static final int MIN_UDP_PORT = 1;
+    private static final int MIN_UDP_PORT = 0;
 
     private final Set<InetNetwork> addresses;
     private final Set<InetAddress> dnsServers;
@@ -336,14 +335,14 @@ public final class Interface {
         public Builder setListenPort(final int listenPort) {
             if (listenPort < MIN_UDP_PORT || listenPort > MAX_UDP_PORT)
                 throw new IllegalArgumentException("ListenPort must be a valid UDP port number");
-            this.listenPort = Optional.of(listenPort);
+            this.listenPort = listenPort == 0 ? Optional.empty() : Optional.of(listenPort);
             return this;
         }
 
         public Builder setMtu(final int mtu) {
-            if (mtu < MIN_IPV6_MTU)
-                throw new IllegalArgumentException("MTU must be at least " + MIN_IPV6_MTU);
-            this.mtu = Optional.of(mtu);
+            if (mtu < 0)
+                throw new IllegalArgumentException("MTU must not be negative");
+            this.mtu = mtu == 0 ? Optional.empty() : Optional.of(mtu);
             return this;
         }
     }

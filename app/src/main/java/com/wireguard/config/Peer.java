@@ -277,7 +277,8 @@ public final class Peer {
         public Builder setPersistentKeepalive(final int persistentKeepalive) {
             if (persistentKeepalive < 0 || persistentKeepalive > MAX_PERSISTENT_KEEPALIVE)
                 throw new IllegalArgumentException("Invalid value for PersistentKeepalive");
-            this.persistentKeepalive = Optional.of(persistentKeepalive);
+            this.persistentKeepalive = persistentKeepalive == 0 ?
+                    Optional.empty() : Optional.of(persistentKeepalive);
             return this;
         }
 
